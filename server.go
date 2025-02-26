@@ -100,8 +100,17 @@ func handlePlayerInput(conn *websocket.Conn, playerID string) {
 		if exists {
 			switch action.Type {
 			case "move":
-				player.X += float32(action.X * playerSpeed)
-				player.Y += float32(action.Y * playerSpeed)
+				// Calculate new position
+				newX := player.X + float32(action.X*playerSpeed)
+				newY := player.Y + float32(action.Y*playerSpeed)
+				
+				// Apply boundary checks
+				if newX >= 0 && newX <= screenWidth {
+					player.X = newX
+				}
+				if newY >= 0 && newY <= screenHeight {
+					player.Y = newY
+				}
 			case "shoot":
 				if player.Cooldown == 0 {
 					mouseX := float32(action.X)
