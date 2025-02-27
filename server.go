@@ -24,6 +24,7 @@ type Player struct {
 	X           float32 `json:"x"`
 	Y           float32 `json:"y"`
 	MoveCounter int     `json:"moveCounter"`
+	Role        string  `json:"role"` // "cat" or "mouse"
 }
 
 // Game State
@@ -46,17 +47,29 @@ var mu sync.Mutex
 // Add a map to track colliding pairs at package level
 var collidingPairs = make(map[string]bool)
 
+// Add a variable to track if cat exists
+var catExists bool = false
+
 // WebSocket Handler
 func gameHandler(w http.ResponseWriter, r *http.Request) {
 	conn, _ := upgrader.Upgrade(w, r, nil)
 	defer conn.Close()
 
 	playerID := fmt.Sprintf("Player-%d", len(gameState.Players)+1)
+	
+	// Assign role based on if cat exists
+	role := "mouse"
+	if !catExists {
+		role = "cat"
+		catExists = true
+	}
+
 	player := &Player{
 		ID:          playerID,
 		X:           screenWidth / 2,
 		Y:           screenHeight / 2,
 		MoveCounter: 0,
+		Role:        role,
 	}
 
 	mu.Lock()
@@ -64,7 +77,7 @@ func gameHandler(w http.ResponseWriter, r *http.Request) {
 	connections[playerID] = conn
 	mu.Unlock()
 
-	fmt.Println(playerID, "joined the game!")
+	fmt.Printf("%s joined the game as %s!\n", playerID, role)
 
 	go handlePlayerInput(conn, playerID)
 	go sendGameUpdates()
@@ -78,6 +91,10 @@ func handlePlayerInput(conn *websocket.Conn, playerID string) {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			mu.Lock()
+			player := gameState.Players[playerID]
+			if player.Role == "cat" {
+				catExists = false
+			}
 			delete(gameState.Players, playerID)
 			delete(connections, playerID)
 			mu.Unlock()
@@ -114,7 +131,7 @@ func handlePlayerInput(conn *websocket.Conn, playerID string) {
 	}
 }
 
-// Update collision detection to only count new collisions
+// Update collision detection to handle cat-mouse collisions
 func checkCollisions() {
 	gameState.mu.Lock()
 	defer gameState.mu.Unlock()
@@ -133,25 +150,36 @@ func checkCollisions() {
 			p1 := players[i]
 			p2 := players[j]
 
-			// Create a unique key for this pair
-			pairKey := fmt.Sprintf("%s-%s", p1.ID, p2.ID)
-			if p1.ID > p2.ID {
-				pairKey = fmt.Sprintf("%s-%s", p2.ID, p1.ID)
-			}
+			// Only check collisions if one is cat and one is mouse
+			if (p1.Role == "cat" && p2.Role == "mouse") || (p1.Role == "mouse" && p2.Role == "cat") {
+				// Create a unique key for this pair
+				pairKey := fmt.Sprintf("%s-%s", p1.ID, p2.ID)
+				if p1.ID > p2.ID {
+					pairKey = fmt.Sprintf("%s-%s", p2.ID, p1.ID)
+				}
 
-			// Calculate distance between players
-			dx := p1.X - p2.X
-			dy := p1.Y - p2.Y
-			distance := float32(math.Sqrt(float64(dx*dx + dy*dy)))
+				// Calculate distance between players
+				dx := p1.X - p2.X
+				dy := p1.Y - p2.Y
+				distance := float32(math.Sqrt(float64(dx*dx + dy*dy)))
 
-			// If they're colliding
-			if distance < 60 {
-				currentCollisions[pairKey] = true
-				// Only increment if this is a new collision
-				if !collidingPairs[pairKey] {
-					p1.MoveCounter++
-					p2.MoveCounter++
-					collidingPairs[pairKey] = true
+				// If they're colliding
+				if distance < 60 {
+					currentCollisions[pairKey] = true
+					// Only increment if this is a new collision
+					if !collidingPairs[pairKey] {
+						// Determine which player is the mouse and reset its position
+						if p1.Role == "mouse" {
+							p1.X = screenWidth / 2
+							p1.Y = screenHeight / 2
+							p1.MoveCounter++
+						} else {
+							p2.X = screenWidth / 2
+							p2.Y = screenHeight / 2
+							p2.MoveCounter++
+						}
+						collidingPairs[pairKey] = true
+					}
 				}
 			}
 		}

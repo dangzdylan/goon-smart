@@ -31,6 +31,7 @@ type Player struct {
 	X           float32 `json:"x"`
 	Y           float32 `json:"y"`
 	MoveCounter int     `json:"moveCounter"`
+	Role        string  `json:"role"`
 }
 
 type Game struct {
@@ -105,10 +106,18 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	// Draw players
 	for _, player := range g.Players {
-		vector.DrawFilledCircle(screen, player.X, player.Y, 30, color.Black, true)
+		// Choose color based on role
+		var playerColor color.Color
+		if player.Role == "cat" {
+			playerColor = color.RGBA{R: 255, G: 0, B: 0, A: 255} // Red for cat
+		} else {
+			playerColor = color.RGBA{R: 100, G: 100, B: 100, A: 255} // Gray for mouse
+		}
+
+		vector.DrawFilledCircle(screen, player.X, player.Y, 30, playerColor, true)
 		
 		// Draw collision counter in top right
-		counterText := fmt.Sprintf("Collisions: %d", player.MoveCounter)
+		counterText := fmt.Sprintf("Catches: %d", player.MoveCounter)
 		text.Draw(screen, counterText, gameFont, screenWidth-120, 20, color.Black)
 	}
 }
