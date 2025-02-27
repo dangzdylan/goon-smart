@@ -199,7 +199,37 @@ func checkCollisions() {
 	}
 }
 
-// Update sendGameUpdates to include collision check
+// Add function to swap cat role
+func swapCatRole() {
+	gameState.mu.Lock()
+	defer gameState.mu.Unlock()
+
+	// Find current cat and all mice
+	var currentCat *Player
+	mice := make([]*Player, 0)
+	
+	for _, player := range gameState.Players {
+		if player.Role == "cat" {
+			currentCat = player
+		} else {
+			mice = append(mice, player)
+		}
+	}
+
+	// Only proceed if we have both a cat and at least one mouse
+	if currentCat != nil && len(mice) > 0 {
+		// Choose random mouse to become new cat
+		newCat := mice[time.Now().UnixNano()%int64(len(mice))]
+		
+		// Swap roles
+		currentCat.Role = "mouse"
+		newCat.Role = "cat"
+		
+		fmt.Printf("New cat is %s (was %s)\n", newCat.ID, currentCat.ID)
+	}
+}
+
+// Update sendGameUpdates to handle cat rotation
 func sendGameUpdates() {
 	for {
 		time.Sleep(30 * time.Millisecond)
@@ -208,11 +238,17 @@ func sendGameUpdates() {
 
 		// Update timer
 		gameState.mu.Lock()
-		gameState.Timer -= 30.0 / 1000.0  // Convert 30ms to seconds
+		gameState.Timer -= 15.0 / 1000.0  // Convert 30ms to seconds
 		if gameState.Timer <= 0 {
 			gameState.Timer = 4.0
+			gameState.mu.Unlock()
+			swapCatRole()  // Swap cat role when timer hits 0
+		} else {
+			gameState.mu.Unlock()
 		}
 		
+		// Send updated state to all clients
+		gameState.mu.Lock()
 		stateJSON, _ := json.Marshal(gameState)
 		for _, conn := range connections {
 			conn.WriteMessage(websocket.TextMessage, stateJSON)
