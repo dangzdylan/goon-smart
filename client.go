@@ -35,9 +35,10 @@ type Player struct {
 }
 
 type Game struct {
-	Players map[string]*Player
-	conn    *websocket.Conn
-	timer   float64
+	Players   map[string]*Player
+	conn      *websocket.Conn
+	timer     float64
+	highScore int
 }
 
 // Connect to WebSocket
@@ -59,23 +60,26 @@ func (g *Game) connectWebSocket() {
 			}
 
 			var data struct {
-				Players map[string]*Player `json:"players"`
-				Timer   float64           `json:"timer"`
+				Players   map[string]*Player `json:"players"`
+				Timer     float64           `json:"timer"`
+				HighScore int               `json:"highScore"`
 			}
 			if err := json.Unmarshal(message, &data); err != nil {
 				log.Println("Unmarshal error:", err)
 				continue
 			}
 			g.Players = data.Players
-			g.timer = data.Timer  // Update timer from server
+			g.timer = data.Timer
+			g.highScore = data.HighScore
 		}
 	}()
 }
 
 func NewGame() *Game {
 	game := &Game{
-		Players: make(map[string]*Player),
-		timer:   0,
+		Players:   make(map[string]*Player),
+		timer:     0,
+		highScore: 0,
 	}
 	game.connectWebSocket()
 	return game
@@ -131,6 +135,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 		vector.DrawFilledCircle(screen, player.X, player.Y, 30, playerColor, true)
 	}
+
+	// Draw high score in top left
+	highScoreText := fmt.Sprintf("High Score: %d", g.highScore)
+	text.Draw(screen, highScoreText, gameFont, 20, 20, color.Black)
 
 	// Draw counter and timer in top right
 	counterText := fmt.Sprintf("Catches: %d", catCounter)
