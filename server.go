@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
 	"sync"
 	"time"
@@ -16,29 +15,18 @@ const (
 	screenWidth   = 640
 	screenHeight  = 480
 	playerSpeed   = 5
-	bulletSpeed   = 3
-	shootCooldown = 50
 )
 
-// Player & Bullet structs
+// Player structs
 type Player struct {
-	ID       string  `json:"id"`
-	X        float32 `json:"x"`
-	Y        float32 `json:"y"`
-	Cooldown int     `json:"cooldown"`
-}
-
-type Bullet struct {
+	ID string  `json:"id"`
 	X  float32 `json:"x"`
 	Y  float32 `json:"y"`
-	Dx float32 `json:"dx"`
-	Dy float32 `json:"dy"`
 }
 
 // Game State
 type Game struct {
 	Players map[string]*Player `json:"players"`
-	Bullets []Bullet           `json:"bullets"`
 	mu      sync.Mutex
 }
 
@@ -48,7 +36,6 @@ var upgrader = websocket.Upgrader{
 
 var gameState = Game{
 	Players: make(map[string]*Player),
-	Bullets: []Bullet{},
 }
 
 var connections = make(map[string]*websocket.Conn)
@@ -60,7 +47,7 @@ func gameHandler(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 
 	playerID := fmt.Sprintf("Player-%d", len(gameState.Players)+1)
-	player := &Player{ID: playerID, X: screenWidth / 2, Y: screenHeight / 2, Cooldown: 0}
+	player := &Player{ID: playerID, X: screenWidth / 2, Y: screenHeight / 2}
 
 	mu.Lock()
 	gameState.Players[playerID] = player
@@ -111,34 +98,19 @@ func handlePlayerInput(conn *websocket.Conn, playerID string) {
 				if newY >= 0 && newY <= screenHeight {
 					player.Y = newY
 				}
-			case "shoot":
-				if player.Cooldown == 0 {
-					mouseX := float32(action.X)
-					mouseY := float32(action.Y)
-					dx := mouseX - player.X
-					dy := mouseY - player.Y
-					length := float32(math.Sqrt(float64(dx*dx + dy*dy)))
-					if length != 0 {
-						dx = dx / length * bulletSpeed
-						dy = dy / length * bulletSpeed
-						gameState.Bullets = append(gameState.Bullets, Bullet{player.X, player.Y, dx, dy})
-						player.Cooldown = shootCooldown
-					}
-				}
 			}
 		}
 		mu.Unlock()
 	}
 }
 
-// Send Game Updates to Clients
+// Update sendGameUpdates
 func sendGameUpdates() {
 	for {
 		time.Sleep(30 * time.Millisecond)
 
 		mu.Lock()
 		stateJSON, _ := json.Marshal(gameState)
-
 		for _, conn := range connections {
 			conn.WriteMessage(websocket.TextMessage, stateJSON)
 		}

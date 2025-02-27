@@ -25,16 +25,8 @@ type Player struct {
 	Cooldown int     `json:"cooldown"`
 }
 
-type Bullet struct {
-	X  float32
-	Y  float32
-	Dx float32
-	Dy float32
-}
-
 type Game struct {
 	Players map[string]Player
-	Bullets []Bullet
 	conn    *websocket.Conn
 }
 
@@ -62,7 +54,6 @@ func (g *Game) connectWebSocket() {
 				continue
 			}
 			g.Players = data.Players
-			g.Bullets = data.Bullets
 		}
 	}()
 }
@@ -70,7 +61,6 @@ func (g *Game) connectWebSocket() {
 func NewGame() *Game {
 	game := &Game{
 		Players: make(map[string]Player),
-		Bullets: []Bullet{},
 	}
 	game.connectWebSocket()
 	return game
@@ -99,15 +89,6 @@ func (g *Game) Update() error {
 		})
 	}
 
-	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		x, y := ebiten.CursorPosition()
-		g.conn.WriteJSON(map[string]interface{}{
-			"type": "shoot",
-			"x":    x,
-			"y":    y,
-		})
-	}
-
 	return nil
 }
 
@@ -116,10 +97,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	for _, player := range g.Players {
 		vector.DrawFilledCircle(screen, player.X, player.Y, 30, color.Black, true)
-	}
-
-	for _, bullet := range g.Bullets {
-		vector.DrawFilledCircle(screen, bullet.X, bullet.Y, 5, color.RGBA{255, 0, 0, 255}, true)
 	}
 }
 
