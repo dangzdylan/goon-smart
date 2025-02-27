@@ -19,9 +19,10 @@ const (
 )
 
 type Player struct {
-	ID string
-	X  float32
-	Y  float32
+	ID       string  `json:"id"`
+	X        float32 `json:"x"`
+	Y        float32 `json:"y"`
+	Cooldown int     `json:"cooldown"`
 }
 
 type Bullet struct {
@@ -39,7 +40,7 @@ type Game struct {
 
 // Connect to WebSocket
 func (g *Game) connectWebSocket() {
-	u := url.URL{Scheme: "ws", Host: "10.41.68.22:8080", Path: "/ws"} // Replace with your server's IP
+	u := url.URL{Scheme: "ws", Host: "10.0.0.109:8080", Path: "/ws"} // Replace with your server's IP
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Fatal("WebSocket connection failed:", err)
@@ -55,12 +56,11 @@ func (g *Game) connectWebSocket() {
 				return
 			}
 
-			var data struct {
-				Players map[string]Player `json:"players"`
-				Bullets []Bullet          `json:"bullets"`
+			var data Game
+			if err := json.Unmarshal(message, &data); err != nil {
+				log.Println("Unmarshal error:", err)
+				continue
 			}
-
-			json.Unmarshal(message, &data)
 			g.Players = data.Players
 			g.Bullets = data.Bullets
 		}
