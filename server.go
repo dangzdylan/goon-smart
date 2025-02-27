@@ -43,6 +43,9 @@ var gameState = Game{
 var connections = make(map[string]*websocket.Conn)
 var mu sync.Mutex
 
+// Add a map to track colliding pairs at package level
+var collidingPairs = make(map[string]bool)
+
 // WebSocket Handler
 func gameHandler(w http.ResponseWriter, r *http.Request) {
 	conn, _ := upgrader.Upgrade(w, r, nil)
@@ -111,7 +114,7 @@ func handlePlayerInput(conn *websocket.Conn, playerID string) {
 	}
 }
 
-// Add collision detection and counter increment logic
+// Update collision detection to only count new collisions
 func checkCollisions() {
 	gameState.mu.Lock()
 	defer gameState.mu.Unlock()
@@ -122,21 +125,42 @@ func checkCollisions() {
 		players = append(players, p)
 	}
 
+	// Track current collisions to clean up old pairs
+	currentCollisions := make(map[string]bool)
+
 	for i := 0; i < len(players); i++ {
 		for j := i + 1; j < len(players); j++ {
 			p1 := players[i]
 			p2 := players[j]
 
-			// Calculate distance between players (using circle collision)
+			// Create a unique key for this pair
+			pairKey := fmt.Sprintf("%s-%s", p1.ID, p2.ID)
+			if p1.ID > p2.ID {
+				pairKey = fmt.Sprintf("%s-%s", p2.ID, p1.ID)
+			}
+
+			// Calculate distance between players
 			dx := p1.X - p2.X
 			dy := p1.Y - p2.Y
 			distance := float32(math.Sqrt(float64(dx*dx + dy*dy)))
 
-			// If distance is less than sum of radii (30 + 30), they're colliding
+			// If they're colliding
 			if distance < 60 {
-				p1.MoveCounter++
-				p2.MoveCounter++
+				currentCollisions[pairKey] = true
+				// Only increment if this is a new collision
+				if !collidingPairs[pairKey] {
+					p1.MoveCounter++
+					p2.MoveCounter++
+					collidingPairs[pairKey] = true
+				}
 			}
+		}
+	}
+
+	// Clean up collision tracking for pairs that are no longer colliding
+	for pair := range collidingPairs {
+		if !currentCollisions[pair] {
+			delete(collidingPairs, pair)
 		}
 	}
 }
