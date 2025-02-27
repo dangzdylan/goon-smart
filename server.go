@@ -30,6 +30,7 @@ type Player struct {
 // Game State
 type Game struct {
 	Players map[string]*Player `json:"players"`
+	Timer   float64           `json:"timer"`
 	mu      sync.Mutex
 }
 
@@ -39,6 +40,7 @@ var upgrader = websocket.Upgrader{
 
 var gameState = Game{
 	Players: make(map[string]*Player),
+	Timer:   4.0,
 }
 
 var connections = make(map[string]*websocket.Conn)
@@ -182,6 +184,7 @@ func checkCollisions() {
 							p1.Y = screenHeight / 2
 						}
 						collidingPairs[pairKey] = true
+						gameState.Timer = 4.0  // Reset timer on collision
 					}
 				}
 			}
@@ -203,12 +206,18 @@ func sendGameUpdates() {
 
 		checkCollisions()
 
-		mu.Lock()
+		// Update timer
+		gameState.mu.Lock()
+		gameState.Timer -= 30.0 / 1000.0  // Convert 30ms to seconds
+		if gameState.Timer <= 0 {
+			gameState.Timer = 4.0
+		}
+		
 		stateJSON, _ := json.Marshal(gameState)
 		for _, conn := range connections {
 			conn.WriteMessage(websocket.TextMessage, stateJSON)
 		}
-		mu.Unlock()
+		gameState.mu.Unlock()
 	}
 }
 

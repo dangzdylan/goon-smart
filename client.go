@@ -60,12 +60,14 @@ func (g *Game) connectWebSocket() {
 
 			var data struct {
 				Players map[string]*Player `json:"players"`
+				Timer   float64           `json:"timer"`
 			}
 			if err := json.Unmarshal(message, &data); err != nil {
 				log.Println("Unmarshal error:", err)
 				continue
 			}
 			g.Players = data.Players
+			g.timer = data.Timer  // Update timer from server
 		}
 	}()
 }
@@ -73,18 +75,13 @@ func (g *Game) connectWebSocket() {
 func NewGame() *Game {
 	game := &Game{
 		Players: make(map[string]*Player),
-		timer:   4.0,
+		timer:   0,
 	}
 	game.connectWebSocket()
 	return game
 }
 
 func (g *Game) Update() error {
-	g.timer -= 1.0 / 60.0
-	if g.timer <= 0 {
-		g.timer = 4.0
-	}
-
 	dx, dy := 0, 0
 	if ebiten.IsKeyPressed(ebiten.KeyW) {
 		dy = -1
