@@ -165,18 +165,21 @@ func checkCollisions() {
 
 				// If they're colliding
 				if distance < 60 {
+					fmt.Println("Collision detected between", p1.ID, "and", p2.ID)
 					currentCollisions[pairKey] = true
 					// Only increment if this is a new collision
 					if !collidingPairs[pairKey] {
-						// Determine which player is the mouse and reset its position
-						if p1.Role == "mouse" {
-							p1.X = screenWidth / 2
-							p1.Y = screenHeight / 2
+						// Find the cat and increment its counter
+						if p1.Role == "cat" {
 							p1.MoveCounter++
-						} else {
+							// Reset mouse position
 							p2.X = screenWidth / 2
 							p2.Y = screenHeight / 2
+						} else {
 							p2.MoveCounter++
+							// Reset mouse position
+							p1.X = screenWidth / 2
+							p1.Y = screenHeight / 2
 						}
 						collidingPairs[pairKey] = true
 					}
