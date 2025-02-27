@@ -37,6 +37,7 @@ type Player struct {
 type Game struct {
 	Players map[string]*Player
 	conn    *websocket.Conn
+	timer   float64
 }
 
 // Connect to WebSocket
@@ -72,12 +73,18 @@ func (g *Game) connectWebSocket() {
 func NewGame() *Game {
 	game := &Game{
 		Players: make(map[string]*Player),
+		timer:   4.0,
 	}
 	game.connectWebSocket()
 	return game
 }
 
 func (g *Game) Update() error {
+	g.timer -= 1.0 / 60.0
+	if g.timer <= 0 {
+		g.timer = 4.0
+	}
+
 	dx, dy := 0, 0
 	if ebiten.IsKeyPressed(ebiten.KeyW) {
 		dy = -1
@@ -128,9 +135,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		vector.DrawFilledCircle(screen, player.X, player.Y, 30, playerColor, true)
 	}
 
-	// Draw single counter in top right
+	// Draw counter and timer in top right
 	counterText := fmt.Sprintf("Catches: %d", catCounter)
 	text.Draw(screen, counterText, gameFont, screenWidth-120, 20, color.Black)
+	
+	timerText := fmt.Sprintf("Time: %.1f", g.timer)
+	text.Draw(screen, timerText, gameFont, screenWidth-120, 40, color.Black)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
