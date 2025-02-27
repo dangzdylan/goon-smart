@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"sync"
 	"time"
@@ -19,9 +20,10 @@ const (
 
 // Player structs
 type Player struct {
-	ID string  `json:"id"`
-	X  float32 `json:"x"`
-	Y  float32 `json:"y"`
+	ID          string  `json:"id"`
+	X           float32 `json:"x"`
+	Y           float32 `json:"y"`
+	MoveCounter int     `json:"moveCounter"`
 }
 
 // Game State
@@ -47,7 +49,12 @@ func gameHandler(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 
 	playerID := fmt.Sprintf("Player-%d", len(gameState.Players)+1)
-	player := &Player{ID: playerID, X: screenWidth / 2, Y: screenHeight / 2}
+	player := &Player{
+		ID:          playerID,
+		X:           screenWidth / 2,
+		Y:           screenHeight / 2,
+		MoveCounter: 0,
+	}
 
 	mu.Lock()
 	gameState.Players[playerID] = player
@@ -104,10 +111,42 @@ func handlePlayerInput(conn *websocket.Conn, playerID string) {
 	}
 }
 
-// Update sendGameUpdates
+// Add collision detection and counter increment logic
+func checkCollisions() {
+	gameState.mu.Lock()
+	defer gameState.mu.Unlock()
+
+	// Check each pair of players for collision
+	players := make([]*Player, 0, len(gameState.Players))
+	for _, p := range gameState.Players {
+		players = append(players, p)
+	}
+
+	for i := 0; i < len(players); i++ {
+		for j := i + 1; j < len(players); j++ {
+			p1 := players[i]
+			p2 := players[j]
+
+			// Calculate distance between players (using circle collision)
+			dx := p1.X - p2.X
+			dy := p1.Y - p2.Y
+			distance := float32(math.Sqrt(float64(dx*dx + dy*dy)))
+
+			// If distance is less than sum of radii (30 + 30), they're colliding
+			if distance < 60 {
+				p1.MoveCounter++
+				p2.MoveCounter++
+			}
+		}
+	}
+}
+
+// Update sendGameUpdates to include collision check
 func sendGameUpdates() {
 	for {
 		time.Sleep(30 * time.Millisecond)
+
+		checkCollisions()
 
 		mu.Lock()
 		stateJSON, _ := json.Marshal(gameState)

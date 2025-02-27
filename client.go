@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"image/color"
 	"log"
 	"net/url"
@@ -9,6 +10,9 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/hajimehoshi/ebiten/v2/text"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/basicfont"
 )
 
 const (
@@ -18,11 +22,15 @@ const (
 	bulletSpeed  = 3
 )
 
+var (
+	gameFont font.Face = basicfont.Face7x13
+)
+
 type Player struct {
-	ID       string  `json:"id"`
-	X        float32 `json:"x"`
-	Y        float32 `json:"y"`
-	Cooldown int     `json:"cooldown"`
+	ID          string  `json:"id"`
+	X           float32 `json:"x"`
+	Y           float32 `json:"y"`
+	MoveCounter int     `json:"moveCounter"`
 }
 
 type Game struct {
@@ -95,8 +103,13 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.White)
 
+	// Draw players
 	for _, player := range g.Players {
 		vector.DrawFilledCircle(screen, player.X, player.Y, 30, color.Black, true)
+		
+		// Draw collision counter in top right
+		counterText := fmt.Sprintf("Collisions: %d", player.MoveCounter)
+		text.Draw(screen, counterText, gameFont, screenWidth-120, 20, color.Black)
 	}
 }
 
