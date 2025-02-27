@@ -35,7 +35,7 @@ type Player struct {
 }
 
 type Game struct {
-	Players map[string]Player
+	Players map[string]*Player
 	conn    *websocket.Conn
 }
 
@@ -57,7 +57,9 @@ func (g *Game) connectWebSocket() {
 				return
 			}
 
-			var data Game
+			var data struct {
+				Players map[string]*Player `json:"players"`
+			}
 			if err := json.Unmarshal(message, &data); err != nil {
 				log.Println("Unmarshal error:", err)
 				continue
@@ -69,7 +71,7 @@ func (g *Game) connectWebSocket() {
 
 func NewGame() *Game {
 	game := &Game{
-		Players: make(map[string]Player),
+		Players: make(map[string]*Player),
 	}
 	game.connectWebSocket()
 	return game
@@ -104,6 +106,15 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.White)
 
+	// Find cat's counter to display
+	var catCounter int
+	for _, player := range g.Players {
+		if player.Role == "cat" {
+			catCounter = player.MoveCounter
+			break
+		}
+	}
+
 	// Draw players
 	for _, player := range g.Players {
 		// Choose color based on role
@@ -115,11 +126,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 
 		vector.DrawFilledCircle(screen, player.X, player.Y, 30, playerColor, true)
-		
-		// Draw collision counter in top right
-		counterText := fmt.Sprintf("Catches: %d", player.MoveCounter)
-		text.Draw(screen, counterText, gameFont, screenWidth-120, 20, color.Black)
 	}
+
+	// Draw single counter in top right
+	counterText := fmt.Sprintf("Catches: %d", catCounter)
+	text.Draw(screen, counterText, gameFont, screenWidth-120, 20, color.Black)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
