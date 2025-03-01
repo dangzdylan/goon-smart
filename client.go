@@ -35,12 +35,24 @@ var catImageBytes []byte
 //go:embed assets/m.png
 var mouseImageBytes []byte
 
+// Add color mapping
+var colorMap = map[string]color.Color{
+	"red":    color.RGBA{255, 0, 0, 255},
+	"orange": color.RGBA{255, 127, 0, 255},
+	"yellow": color.RGBA{255, 255, 0, 255},
+	"green":  color.RGBA{0, 255, 0, 255},
+	"blue":   color.RGBA{0, 0, 255, 255},
+	"indigo": color.RGBA{75, 0, 130, 255},
+	"violet": color.RGBA{138, 43, 226, 255},
+}
+
 type Player struct {
 	ID          string  `json:"id"`
 	X           float32 `json:"x"`
 	Y           float32 `json:"y"`
 	MoveCounter int     `json:"moveCounter"`
 	Role        string  `json:"role"`
+	Color       string  `json:"color"`
 }
 
 type Game struct {
@@ -168,14 +180,25 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		// Center the image on the player position
 		op.GeoM.Translate(-float64(w)/2, -float64(h)/2)
 		
-		// Scale the image if needed (adjust these values to change size)
-		scale := 0.1 // Adjust this value to make image larger or smaller
+		// Scale the image if needed
+		scale := 0.1
 		op.GeoM.Scale(scale, scale)
 		
 		// Move to player position
 		op.GeoM.Translate(float64(player.X), float64(player.Y))
 		
 		screen.DrawImage(playerImage, op)
+
+		// Draw colored dot in center using a small filled rectangle instead
+		if playerColor, ok := colorMap[player.Color]; ok {
+			dotSize := 5
+			dotImg := ebiten.NewImage(dotSize*2, dotSize*2)
+			dotImg.Fill(playerColor)
+			
+			dotOp := &ebiten.DrawImageOptions{}
+			dotOp.GeoM.Translate(float64(player.X)-float64(dotSize), float64(player.Y)-float64(dotSize))
+			screen.DrawImage(dotImg, dotOp)
+		}
 	}
 
 	// Draw high score in top left

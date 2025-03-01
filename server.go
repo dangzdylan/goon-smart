@@ -25,6 +25,7 @@ type Player struct {
 	Y           float32 `json:"y"`
 	MoveCounter int     `json:"moveCounter"`
 	Role        string  `json:"role"` // "cat" or "mouse"
+	Color       string  `json:"color"`
 }
 
 // Game State
@@ -54,6 +55,19 @@ var collidingPairs = make(map[string]bool)
 // Add a variable to track if cat exists
 var catExists bool = false
 
+// Add rainbow colors at package level
+var rainbowColors = []string{
+	"red",    // #FF0000
+	"orange", // #FF7F00
+	"yellow", // #FFFF00
+	"green",  // #00FF00
+	"blue",   // #0000FF
+	"indigo", // #4B0082
+	"violet", // #8B00FF
+}
+
+var usedColors = make(map[string]bool)
+
 // Add function to get random position
 func getRandomPosition() (float32, float32) {
 	// Add padding of 50 pixels from edges
@@ -61,6 +75,26 @@ func getRandomPosition() (float32, float32) {
 	x := padding + float32(time.Now().UnixNano()%int64(screenWidth-2*padding))
 	y := padding + float32(time.Now().UnixNano()%int64(screenHeight-2*padding))
 	return x, y
+}
+
+// Add function to get random unused color
+func getRandomColor() string {
+	availableColors := make([]string, 0)
+	for _, color := range rainbowColors {
+		if !usedColors[color] {
+			availableColors = append(availableColors, color)
+		}
+	}
+	
+	if len(availableColors) == 0 {
+		// If all colors are used, reset and start over
+		usedColors = make(map[string]bool)
+		return rainbowColors[0]
+	}
+	
+	color := availableColors[time.Now().UnixNano()%int64(len(availableColors))]
+	usedColors[color] = true
+	return color
 }
 
 // WebSocket Handler
@@ -86,6 +120,7 @@ func gameHandler(w http.ResponseWriter, r *http.Request) {
 		Y:           y,
 		MoveCounter: 0,
 		Role:        role,
+		Color:       getRandomColor(),
 	}
 
 	mu.Lock()
@@ -111,6 +146,7 @@ func handlePlayerInput(conn *websocket.Conn, playerID string) {
 			if player.Role == "cat" {
 				catExists = false
 			}
+			usedColors[player.Color] = false  // Free up the color
 			delete(gameState.Players, playerID)
 			delete(connections, playerID)
 			mu.Unlock()
