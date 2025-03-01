@@ -41,7 +41,7 @@ var upgrader = websocket.Upgrader{
 
 var gameState = Game{
 	Players:   make(map[string]*Player),
-	Timer:     6.0,
+	Timer:     7.0,
 	HighScore: 0,
 }
 
@@ -196,7 +196,7 @@ func checkCollisions() {
 							p1.X, p1.Y = getRandomPosition()
 						}
 						collidingPairs[pairKey] = true
-						gameState.Timer = 4.0  // Reset timer on collision
+						gameState.Timer = 7.0  // Changed from 4.0 to 7.0
 					}
 				}
 			}
