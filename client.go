@@ -56,12 +56,13 @@ type Player struct {
 }
 
 type Game struct {
-	Players       map[string]*Player
-	conn          *websocket.Conn
-	timer     float64
-	highScore int
-	catImage    *ebiten.Image  // for cat (d.png)
-	mouseImage  *ebiten.Image  // for others (m.png)
+	Players         map[string]*Player
+	conn            *websocket.Conn
+	timer           float64
+	highScore       int
+	highScoreColor  string
+	catImage        *ebiten.Image  // for cat (d.png)
+	mouseImage      *ebiten.Image  // for others (m.png)
 }
 
 // Connect to WebSocket
@@ -83,9 +84,10 @@ func (g *Game) connectWebSocket() {
 			}
 
 			var data struct {
-				Players   map[string]*Player `json:"players"`
-				Timer     float64           `json:"timer"`
-				HighScore int               `json:"highScore"`
+				Players         map[string]*Player `json:"players"`
+				Timer           float64           `json:"timer"`
+				HighScore       int               `json:"highScore"`
+				HighScoreColor  string            `json:"highScoreColor"`
 			}
 			if err := json.Unmarshal(message, &data); err != nil {
 				log.Println("Unmarshal error:", err)
@@ -94,6 +96,7 @@ func (g *Game) connectWebSocket() {
 			g.Players = data.Players
 			g.timer = data.Timer
 			g.highScore = data.HighScore
+			g.highScoreColor = data.HighScoreColor
 		}
 	}()
 }
@@ -115,8 +118,9 @@ func NewGame() *Game {
 
 	game := &Game{
 		Players:      make(map[string]*Player),
-		timer:     0,
-		highScore: 0,
+		timer:      0,
+		highScore:  0,
+		highScoreColor: "",
 		catImage:   catImage,
 		mouseImage: mouseImage,
 	}
@@ -201,16 +205,24 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	// Draw high score in top left
+	// Draw high score in top left with color
 	highScoreText := fmt.Sprintf("Best Score: %d", g.highScore)
-	text.Draw(screen, highScoreText, gameFont, 20, 20, color.Black)
+	scoreColor := color.RGBA{0, 0, 0, 255}  // Default black
+	if g.highScoreColor != "" {
+		if c, ok := colorMap[g.highScoreColor]; ok {
+			if rgba, ok := c.(color.RGBA); ok {
+				scoreColor = rgba
+			}
+		}
+	}
+	text.Draw(screen, highScoreText, gameFont, 20, 20, scoreColor)
 
 	// Draw counter and timer in top right with adjusted positions
 	counterText := fmt.Sprintf("Current Freak-ye Catches: %d", catCounter)
-	text.Draw(screen, counterText, gameFont, screenWidth-250, 20, color.Black)
+	text.Draw(screen, counterText, gameFont, screenWidth-300, 20, color.Black)
 	
 	timerText := fmt.Sprintf("Time until Freak-ye switch: %.1f", g.timer)
-	text.Draw(screen, timerText, gameFont, screenWidth-250, 40, color.Black)
+	text.Draw(screen, timerText, gameFont, screenWidth-300, 40, color.Black)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {

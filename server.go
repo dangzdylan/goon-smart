@@ -30,10 +30,11 @@ type Player struct {
 
 // Game State
 type Game struct {
-	Players   map[string]*Player `json:"players"`
-	Timer     float64           `json:"timer"`
-	HighScore int               `json:"highScore"`
-	mu        sync.Mutex
+	Players         map[string]*Player `json:"players"`
+	Timer           float64           `json:"timer"`
+	HighScore       int               `json:"highScore"`
+	HighScoreColor  string            `json:"highScoreColor"`
+	mu              sync.Mutex
 }
 
 var upgrader = websocket.Upgrader{
@@ -41,9 +42,10 @@ var upgrader = websocket.Upgrader{
 }
 
 var gameState = Game{
-	Players:   make(map[string]*Player),
-	Timer:     7.0,
-	HighScore: 0,
+	Players:         make(map[string]*Player),
+	Timer:           7.0,
+	HighScore:       0,
+	HighScoreColor:  "",
 }
 
 var connections = make(map[string]*websocket.Conn)
@@ -247,7 +249,7 @@ func checkCollisions() {
 	}
 }
 
-// Update swapCatRole to check for high score
+// Update swapCatRole to track high score holder's color
 func swapCatRole() {
 	gameState.mu.Lock()
 	defer gameState.mu.Unlock()
@@ -269,7 +271,8 @@ func swapCatRole() {
 		// Update high score if current score is higher
 		if currentCat.MoveCounter > gameState.HighScore {
 			gameState.HighScore = currentCat.MoveCounter
-			fmt.Printf("New high score: %d!\n", gameState.HighScore)
+			gameState.HighScoreColor = currentCat.Color  // Store the color of the high score holder
+			fmt.Printf("New high score: %d by %s player!\n", gameState.HighScore, currentCat.Color)
 		}
 
 		// Choose random mouse to become new cat
