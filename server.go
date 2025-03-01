@@ -61,7 +61,6 @@ var catExists bool = false
 var rainbowColors = []string{
 	"red",    // #FF0000
 	"orange", // #FF7F00
-	"yellow", // #FFFF00
 	"green",  // #00FF00
 	"blue",   // #0000FF
 	"indigo", // #4B0082
