@@ -249,7 +249,7 @@ func swapCatRole() {
 	}
 }
 
-// Update sendGameUpdates to handle cat rotation
+// Update sendGameUpdates to use 7.0 seconds consistently
 func sendGameUpdates() {
 	for {
 		time.Sleep(30 * time.Millisecond)
@@ -260,7 +260,7 @@ func sendGameUpdates() {
 		gameState.mu.Lock()
 		gameState.Timer -= 15.0 / 1000.0  // Convert 30ms to seconds
 		if gameState.Timer <= 0 {
-			gameState.Timer = 4.0
+			gameState.Timer = 7.0  // Changed from 4.0 to 7.0
 			gameState.mu.Unlock()
 			swapCatRole()  // Swap cat role when timer hits 0
 		} else {
