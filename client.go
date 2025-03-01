@@ -23,6 +23,8 @@ const (
 	screenHeight = 720
 	playerSpeed  = 5
 	bulletSpeed  = 3
+	titleSize    = 2.0  // Scale factor for title text
+	numberSize   = 1.5  // Scale factor for numbers
 )
 
 var (
@@ -157,6 +159,23 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.White)
 
+	// Draw title at top middle
+	titleText := "RUN FROM FREAK-YE"
+	titleBounds := text.BoundString(gameFont, titleText)
+	titleX := (screenWidth - titleBounds.Dx()*int(titleSize)) / 2
+	
+	// Create title options with scaling
+	titleOpts := &ebiten.DrawImageOptions{}
+	titleOpts.GeoM.Scale(titleSize, titleSize)
+	titleOpts.GeoM.Translate(float64(titleX), 30)
+
+	// Create temporary image for scaled text
+	titleImg := ebiten.NewImage(titleBounds.Dx()+1, titleBounds.Dy()+1)
+	text.Draw(titleImg, titleText, gameFont, 0, -titleBounds.Min.Y, color.Black)
+	
+	// Draw scaled title
+	screen.DrawImage(titleImg, titleOpts)
+
 	// Find cat's counter to display
 	var catCounter int
 	for _, player := range g.Players {
@@ -205,8 +224,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	// Draw high score in top left with color
-	highScoreText := fmt.Sprintf("Best Score: %d", g.highScore)
+	// Draw high score in top left with color and scaled number
+	scoreText := "Best Score: "
+	scoreNum := fmt.Sprintf("%d", g.highScore)
+	
 	scoreColor := color.RGBA{0, 0, 0, 255}  // Default black
 	if g.highScoreColor != "" {
 		if c, ok := colorMap[g.highScoreColor]; ok {
@@ -215,14 +236,53 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			}
 		}
 	}
-	text.Draw(screen, highScoreText, gameFont, 20, 20, scoreColor)
-
-	// Draw counter and timer in top right with adjusted positions
-	counterText := fmt.Sprintf("Current Freak-ye Catches: %d", catCounter)
-	text.Draw(screen, counterText, gameFont, screenWidth-300, 20, color.Black)
 	
-	timerText := fmt.Sprintf("Time until Freak-ye switch: %.1f", g.timer)
+	// Draw label normally
+	text.Draw(screen, scoreText, gameFont, 20, 20, scoreColor)
+	
+	// Draw number scaled
+	numBounds := text.BoundString(gameFont, scoreNum)
+	numImg := ebiten.NewImage(numBounds.Dx()+1, numBounds.Dy()+1)
+	text.Draw(numImg, scoreNum, gameFont, 0, -numBounds.Min.Y, scoreColor)
+	
+	numOpts := &ebiten.DrawImageOptions{}
+	numOpts.GeoM.Scale(numberSize, numberSize)
+	numOpts.GeoM.Translate(float64(20+text.BoundString(gameFont, scoreText).Dx()), 5)
+	screen.DrawImage(numImg, numOpts)
+
+	// Draw counter in top right with scaled number
+	catchText := "Current Freak-ye Catches: "
+	catchNum := fmt.Sprintf("%d", catCounter)
+	
+	// Draw label normally
+	text.Draw(screen, catchText, gameFont, screenWidth-300, 20, color.Black)
+	
+	// Draw number scaled
+	catchBounds := text.BoundString(gameFont, catchNum)
+	catchImg := ebiten.NewImage(catchBounds.Dx()+1, catchBounds.Dy()+1)
+	text.Draw(catchImg, catchNum, gameFont, 0, -catchBounds.Min.Y, color.Black)
+	
+	catchOpts := &ebiten.DrawImageOptions{}
+	catchOpts.GeoM.Scale(numberSize, numberSize)
+	catchOpts.GeoM.Translate(float64(screenWidth-300+text.BoundString(gameFont, catchText).Dx()), 5)
+	screen.DrawImage(catchImg, catchOpts)
+
+	// Draw timer with scaled number
+	timerText := "Time until Freak-ye switch: "
+	timerNum := fmt.Sprintf("%.1f", g.timer)
+	
+	// Draw label normally
 	text.Draw(screen, timerText, gameFont, screenWidth-300, 40, color.Black)
+	
+	// Draw number scaled
+	timerBounds := text.BoundString(gameFont, timerNum)
+	timerImg := ebiten.NewImage(timerBounds.Dx()+1, timerBounds.Dy()+1)
+	text.Draw(timerImg, timerNum, gameFont, 0, -timerBounds.Min.Y, color.Black)
+	
+	timerOpts := &ebiten.DrawImageOptions{}
+	timerOpts.GeoM.Scale(numberSize, numberSize)
+	timerOpts.GeoM.Translate(float64(screenWidth-300+text.BoundString(gameFont, timerText).Dx()), 25)
+	screen.DrawImage(timerImg, timerOpts)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
