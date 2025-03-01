@@ -182,12 +182,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	highScoreText := fmt.Sprintf("Best Score: %d", g.highScore)
 	text.Draw(screen, highScoreText, gameFont, 20, 20, color.Black)
 
-	// Draw counter and timer in top right
+	// Draw counter and timer in top right with adjusted positions
 	counterText := fmt.Sprintf("Current Freak-ye Catches: %d", catCounter)
-	text.Draw(screen, counterText, gameFont, screenWidth-120, 20, color.Black)
+	text.Draw(screen, counterText, gameFont, screenWidth-250, 20, color.Black)
 	
 	timerText := fmt.Sprintf("Time until Freak-ye switch: %.1f", g.timer)
-	text.Draw(screen, timerText, gameFont, screenWidth-120, 40, color.Black)
+	text.Draw(screen, timerText, gameFont, screenWidth-250, 40, color.Black)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {

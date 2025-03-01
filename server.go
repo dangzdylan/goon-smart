@@ -41,7 +41,7 @@ var upgrader = websocket.Upgrader{
 
 var gameState = Game{
 	Players:   make(map[string]*Player),
-	Timer:     4.0,
+	Timer:     6.0,
 	HighScore: 0,
 }
 
