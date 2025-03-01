@@ -1,18 +1,21 @@
 package main
 
 import (
+	"bytes"
+	_ "embed"
 	"encoding/json"
 	"fmt"
-	"image/color"
+	"image"
+	_ "image/png"
 	"log"
 	"net/url"
 
 	"github.com/gorilla/websocket"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/hajimehoshi/ebiten/v2/text"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/basicfont"
+	"image/color"
 )
 
 const (
@@ -26,6 +29,12 @@ var (
 	gameFont font.Face = basicfont.Face7x13
 )
 
+//go:embed assets/d.png
+var catImageBytes []byte
+
+//go:embed assets/m.png
+var mouseImageBytes []byte
+
 type Player struct {
 	ID          string  `json:"id"`
 	X           float32 `json:"x"`
@@ -35,10 +44,12 @@ type Player struct {
 }
 
 type Game struct {
-	Players   map[string]*Player
-	conn      *websocket.Conn
+	Players       map[string]*Player
+	conn          *websocket.Conn
 	timer     float64
 	highScore int
+	catImage    *ebiten.Image  // for cat (d.png)
+	mouseImage  *ebiten.Image  // for others (m.png)
 }
 
 // Connect to WebSocket
@@ -76,10 +87,26 @@ func (g *Game) connectWebSocket() {
 }
 
 func NewGame() *Game {
+	// Load cat image (d.png)
+	img1, _, err := image.Decode(bytes.NewReader(catImageBytes))
+	if err != nil {
+		log.Fatal("failed to load cat image:", err)
+	}
+	catImage := ebiten.NewImageFromImage(img1)
+
+	// Load mouse image (m.png)
+	img2, _, err := image.Decode(bytes.NewReader(mouseImageBytes))
+	if err != nil {
+		log.Fatal("failed to load mouse image:", err)
+	}
+	mouseImage := ebiten.NewImageFromImage(img2)
+
 	game := &Game{
-		Players:   make(map[string]*Player),
+		Players:      make(map[string]*Player),
 		timer:     0,
 		highScore: 0,
+		catImage:   catImage,
+		mouseImage: mouseImage,
 	}
 	game.connectWebSocket()
 	return game
@@ -125,15 +152,30 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	// Draw players
 	for _, player := range g.Players {
-		// Choose color based on role
-		var playerColor color.Color
+		op := &ebiten.DrawImageOptions{}
+		
+		// Choose image based on role
+		var playerImage *ebiten.Image
 		if player.Role == "cat" {
-			playerColor = color.RGBA{R: 255, G: 0, B: 0, A: 255} // Red for cat
+			playerImage = g.catImage
 		} else {
-			playerColor = color.RGBA{R: 100, G: 100, B: 100, A: 255} // Gray for mouse
+			playerImage = g.mouseImage
 		}
-
-		vector.DrawFilledCircle(screen, player.X, player.Y, 30, playerColor, true)
+		
+		// Get image dimensions
+		w, h := playerImage.Bounds().Dx(), playerImage.Bounds().Dy()
+		
+		// Center the image on the player position
+		op.GeoM.Translate(-float64(w)/2, -float64(h)/2)
+		
+		// Scale the image if needed (adjust these values to change size)
+		scale := 0.1 // Adjust this value to make image larger or smaller
+		op.GeoM.Scale(scale, scale)
+		
+		// Move to player position
+		op.GeoM.Translate(float64(player.X), float64(player.Y))
+		
+		screen.DrawImage(playerImage, op)
 	}
 
 	// Draw high score in top left
