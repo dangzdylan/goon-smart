@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	screenWidth  = 640
-	screenHeight = 480
+	screenWidth  = 1280
+	screenHeight = 720
 	playerSpeed  = 5
 	bulletSpeed  = 3
 )
@@ -179,14 +179,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 
 	// Draw high score in top left
-	highScoreText := fmt.Sprintf("High Score: %d", g.highScore)
+	highScoreText := fmt.Sprintf("Best Score: %d", g.highScore)
 	text.Draw(screen, highScoreText, gameFont, 20, 20, color.Black)
 
 	// Draw counter and timer in top right
-	counterText := fmt.Sprintf("Catches: %d", catCounter)
+	counterText := fmt.Sprintf("Current Freak-ye Catches: %d", catCounter)
 	text.Draw(screen, counterText, gameFont, screenWidth-120, 20, color.Black)
 	
-	timerText := fmt.Sprintf("Time: %.1f", g.timer)
+	timerText := fmt.Sprintf("Time until Freak-ye switch: %.1f", g.timer)
 	text.Draw(screen, timerText, gameFont, screenWidth-120, 40, color.Black)
 }
 

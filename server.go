@@ -13,8 +13,8 @@ import (
 
 // Constants
 const (
-	screenWidth   = 640
-	screenHeight  = 480
+	screenWidth   = 1280
+	screenHeight  = 720
 	playerSpeed   = 5
 )
 
@@ -54,6 +54,15 @@ var collidingPairs = make(map[string]bool)
 // Add a variable to track if cat exists
 var catExists bool = false
 
+// Add function to get random position
+func getRandomPosition() (float32, float32) {
+	// Add padding of 50 pixels from edges
+	padding := float32(50)
+	x := padding + float32(time.Now().UnixNano()%int64(screenWidth-2*padding))
+	y := padding + float32(time.Now().UnixNano()%int64(screenHeight-2*padding))
+	return x, y
+}
+
 // WebSocket Handler
 func gameHandler(w http.ResponseWriter, r *http.Request) {
 	conn, _ := upgrader.Upgrade(w, r, nil)
@@ -68,10 +77,13 @@ func gameHandler(w http.ResponseWriter, r *http.Request) {
 		catExists = true
 	}
 
+	// Get random spawn position
+	x, y := getRandomPosition()
+
 	player := &Player{
 		ID:          playerID,
-		X:           screenWidth / 2,
-		Y:           screenHeight / 2,
+		X:           x,
+		Y:           y,
 		MoveCounter: 0,
 		Role:        role,
 	}
@@ -176,14 +188,12 @@ func checkCollisions() {
 						// Find the cat and increment its counter
 						if p1.Role == "cat" {
 							p1.MoveCounter++
-							// Reset mouse position
-							p2.X = screenWidth / 2
-							p2.Y = screenHeight / 2
+							// Reset mouse to random position
+							p2.X, p2.Y = getRandomPosition()
 						} else {
 							p2.MoveCounter++
-							// Reset mouse position
-							p1.X = screenWidth / 2
-							p1.Y = screenHeight / 2
+							// Reset mouse to random position
+							p1.X, p1.Y = getRandomPosition()
 						}
 						collidingPairs[pairKey] = true
 						gameState.Timer = 4.0  // Reset timer on collision
