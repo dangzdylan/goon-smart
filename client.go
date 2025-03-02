@@ -68,11 +68,7 @@ type Game struct {
 
 // Connect to WebSocket
 func (g *Game) connectWebSocket() {
-<<<<<<< HEAD
 	u := url.URL{Scheme: "ws", Host: "10.169.1.237:8080", Path: "/ws"} // Replace with your server's IP
-=======
-	u := url.URL{Scheme: "ws", Host: "10.41.135.80:8080", Path: "/ws"} // Replace with your server's IP
->>>>>>> 2d8731aa4ebf912d52d12f4fb2d40c2c1b0c785e
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Fatal("WebSocket connection failed:", err)
